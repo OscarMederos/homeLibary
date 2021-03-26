@@ -1,13 +1,18 @@
-# homeLibary
-A python program using sqlite3 to keep track of my stuff + a flask driven API for additional interactions.
+# home library
+A python + sqlite app to keep track of my stuff & a flask driven API for interacting with the databse
 
-API:
-python3 api.py
+### Usage
+```
+username@workstation:~/homedir/$ python3 api.py
+username@workstation:~/homedir/$ python3 homelib.py
 
-http://127.0.0.1:5000/api/v1/resources/videogames/all
+Select a console from the following options:
+('psp',)
+('ds',)
+('ps3',)
+('switch',)
+('3ds',)
+('gba',)
 
-http://127.0.0.1:5000/api/v1/resources/videogames?platform=ps4
-
-CLI:
-
-python3 homelib.py
+What console would you like to see? 
+```
