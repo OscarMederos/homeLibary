@@ -1,5 +1,5 @@
 # homeLibary
-A python program using sqlite3 to keep track of my stuff
+A python program using sqlite3 to keep track of my stuff + a flask driven API for additional interactions.
 
 API:
 python3 api.py
