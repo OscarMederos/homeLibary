@@ -1,90 +1,63 @@
 import csv
 import sqlite3
+from flask import Flask, jsonify, request
 
-# connect to a sqlite3 database in memory & create table
-con = sqlite3.connect(":memory:")
-cur = con.cursor()
-cur.execute("CREATE TABLE videogames(platform TEXT, name TEXT PRIMARY KEY, publisher TEXT)")
+app = Flask(__name__)
 
-# begin read psp csv file into dictionary & insert into table
-with open('psp.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+@app.route('/games')
+def get_games():
+    try:
+        query_parameters = request.args
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+        platform = query_parameters.get('platform')
+        title = query_parameters.get('title')
+        publisher = query_parameters.get('publisher')
 
-# begin read ds csv file into dictionary & insert into table
-with open('ds.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+        conn = sqlite3.connect('library.db')
+        cursor = conn.cursor()
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+        query = "SELECT * FROM library WHERE"
+        to_filter = []
 
-# begin read ps3 csv file into dictionary & insert into table
-with open('ps3.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+        if platform:
+            query += ' platform=? AND'
+            to_filter.append(platform)
+        if title:
+            query += ' title=? AND'
+            to_filter.append(title)
+        if publisher:
+            query += ' publisher=? AND'
+            to_filter.append(publisher)
+        if not (platform or title or publisher):
+            return page_not_found(404)
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+        query = query[:-4] + ';'
 
-# begin read switch csv file into dictionary & insert into table
-with open('switch.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+        results = cursor.execute(query, to_filter).fetchall()
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+        games = []
+        for row in results:
+            game = {'id': row[0], 'platform': row[1], 'title': row[2], 'publisher': row[3]}
+            games.append(game)
 
-# begin read 3ds csv file into dictionary & insert into table
-with open('3ds.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+        return jsonify(games)
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+    except Exception:
+        return 'Internal Server Error', 500
 
-# begin read gba csv file into dictionary & insert into table
-with open('gba.csv', 'r') as fin:
-    dr = csv.reader(fin)
-    to_db = []
-    for line in dr:
-        to_db.append(line)
+if __name__ == '__main__':
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
 
-cur.executemany("INSERT INTO videogames(platform, name, publisher) VALUES(?, ?, ?)", to_db)
-con.commit()
+    cursor.execute("DROP TABLE IF EXISTS library")
+    cursor.execute("CREATE TABLE library (id INTEGER PRIMARY KEY, platform TEXT, title TEXT, publisher TEXT)")
 
-# begin output menu
-print("\nSelect a console from the following options:")
-cur.execute("SELECT DISTINCT platform FROM videogames")
-rows = cur.fetchall()
-for row in rows:
-    print(row)
+    with open('library.csv', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+        next(reader) # skip header row
+        for row in reader:
+            cursor.execute("INSERT INTO library (platform, title, publisher) VALUES (?, ?, ?)", row)
 
-# begin user input
-print("\n")
-prompt = "\nWhat console would you like to see? "
-message = ""
-while message != 'quit':
-    message = input(prompt)
+    conn.commit()
 
-    if message != 'quit':
-        cur.execute("SELECT name FROM videogames WHERE platform='{}'".format(message))
-        rows = cur.fetchall()
-        for row in rows:
-            print(row) 
-
-# close the connection to the sqlite3 database in memory
-con.close()
+    app.run(debug=False)
